@@ -1,22 +1,30 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import connectDB from './config/database.js';
+import 'dotenv/config'
+import app from './app.js'
+import connectDB from './config/database.js'
 
-dotenv.config();
+// Add this line temporarily
+console.log('MONGO_URI:', process.env.MONGO_URI)
+const PORT = process.env.PORT || 5000
 
-connectDB();
-const app = express();
-const allowed_origin = process.env.CLIENT_URL;  
-app.use(cors({
-    origin:allowed_origin, 
-    credentials: true
-}))
-app.get('/', (req, res) => {
-    res.json({message:"API is running"})
-})
+const startServer = async () => {
+  await connectDB()
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on PORT ${PORT}`);
-})
+  const server = app.listen(PORT, () => {
+    console.log(` Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
+    console.log(` Health check: http://localhost:${PORT}/api/health`)
+  })
+
+  process.on('unhandledRejection', (err) => {
+    console.error('UNHANDLED REJECTION  Shutting down...')
+    console.error(err.name, err.message)
+    server.close(() => process.exit(1))
+  })
+
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully...')
+    server.close(() => console.log('Process terminated.'))
+  })
+}
+
+
+startServer()
