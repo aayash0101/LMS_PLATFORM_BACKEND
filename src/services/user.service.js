@@ -4,6 +4,7 @@ import {
   uploadToCloudinary,
   deleteFromCloudinary,
 } from '../utils/uploadToCloudinary.js'
+import Enrollment from '../models/enrollment.model.js'  
 
 export const getProfile = async (userId) => {
   const user = await User.findById(userId)
@@ -73,19 +74,28 @@ export const getInstructorProfile = async (instructorId) => {
 }
 
 export const getStudentDashboard = async (userId) => {
-  const user = await User.findById(userId).populate({
-    path: 'enrolledCourses',
-    select: 'title thumbnail category instructor',
-    populate: {
-      path: 'instructor',
-      select: 'name avatar',
-    },
+  const enrollments = await Enrollment.find({ student: userId })
+    .populate({
+      path: 'course',
+      select: 'title thumbnail category instructor',
+      populate: {
+        path: 'instructor',
+        select: 'name avatar',
+      },
+    })
+    .sort({ updatedAt: -1 })
+    .limit(5) // Show 5 most recent
+
+  const totalEnrolled = await Enrollment.countDocuments({ student: userId })
+  const completed = await Enrollment.countDocuments({
+    student: userId,
+    isCompleted: true,
   })
 
-  if (!user) throw new ApiError(404, 'User not found')
-
   return {
-    totalEnrolled: user.enrolledCourses.length,
-    enrolledCourses: user.enrolledCourses,
+    totalEnrolled,
+    completed,
+    inProgress: totalEnrolled - completed,
+    recentEnrollments: enrollments,
   }
 }

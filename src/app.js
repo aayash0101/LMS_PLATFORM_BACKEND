@@ -14,6 +14,7 @@ import userRoutes from './routes/user.routes.js'
 import courseRoutes from './routes/course.routes.js'
 import sectionRoutes from './routes/section.routes.js'
 import lessonRoutes from './routes/lesson.routes.js'
+import enrollmentRoutes from './routes/enrollment.routes.js'
 
 const app = express()
 
@@ -39,6 +40,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/courses/:courseId/sections', sectionRoutes)
 app.use('/api/courses/:courseId/sections/:sectionId/lessons', lessonRoutes)
+app.use('/api/enrollments', enrollmentRoutes)
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
