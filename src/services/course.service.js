@@ -80,19 +80,11 @@ export const getAllCourses = async (query) => {
 export const getCourseById = async (courseId) => {
   const course = await Course.findById(courseId)
     .populate('instructor', 'name avatar bio')
-    .populate({
-      path: 'sections',
-      populate: {
-        path: 'lessons',
-        select: 'title duration isPreview',
-      },
-    })
-
+    
   if (!course) throw new ApiError(404, 'Course not found')
 
   return course
 }
-
 export const updateCourse = async (courseId, instructorId, updateData) => {
   const course = await Course.findById(courseId)
 

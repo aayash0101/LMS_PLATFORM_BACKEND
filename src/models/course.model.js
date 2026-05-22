@@ -132,7 +132,7 @@ courseSchema.index({ createdAt: -1 })
 
 courseSchema.index({ title: 'text', description: 'text' })
 
-courseSchema.pre('save', function (next) {
+courseSchema.pre('save', function () {
   if (this.isNew) {
     this.slug = slugify(this.title)
   }
@@ -143,7 +143,6 @@ courseSchema.pre('save', function (next) {
     this.publishedAt = new Date()
   }
 
-  next()
 })
 
 courseSchema.virtual('totalSections').get(function () {
