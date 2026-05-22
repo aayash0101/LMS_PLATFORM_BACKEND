@@ -12,6 +12,8 @@ import notFound from './middleware/notFound.js'
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
 import courseRoutes from './routes/course.routes.js'
+import sectionRoutes from './routes/section.routes.js'
+import lessonRoutes from './routes/lesson.routes.js'
 
 const app = express()
 
