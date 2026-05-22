@@ -7,8 +7,6 @@ import {
 
 export const getProfile = async (userId) => {
   const user = await User.findById(userId)
-    .populate('enrolledCourses', 'title thumbnail category')
-    .populate('createdCourses', 'title thumbnail isPublished')
 
   if (!user) throw new ApiError(404, 'User not found')
 
@@ -61,14 +59,8 @@ export const getInstructorProfile = async (instructorId) => {
     _id: instructorId,
     role: 'instructor',
     isActive: true,
-  }).populate({
-    path: 'createdCourses',
-    match: { isPublished: true },       
-    select: 'title thumbnail category averageRating totalStudents price',
   })
-
   if (!instructor) throw new ApiError(404, 'Instructor not found')
-
   return {
     _id: instructor._id,
     name: instructor.name,
@@ -80,15 +72,7 @@ export const getInstructorProfile = async (instructorId) => {
 }
 
 export const getStudentDashboard = async (userId) => {
-  
-  const user = await User.findById(userId).populate({
-    path: 'enrolledCourses',
-    select: 'title thumbnail category instructor',
-    populate: {
-      path: 'instructor',
-      select: 'name avatar',
-    },
-  })
+  const user = await User.findById(userId)
 
   if (!user) throw new ApiError(404, 'User not found')
 

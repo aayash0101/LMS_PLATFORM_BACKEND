@@ -1,9 +1,21 @@
 import ApiError from '../utils/ApiError.js'
+import multer from 'multer'
 
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500
   let message = err.message || 'Internal Server Error'
   let errors = err.errors || []
+
+  if (err instanceof multer.MulterError) {
+    statusCode = 400
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      message = 'File too large. Maximum size is 2MB'
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      message = 'Unexpected field name. Use "avatar" as the field key'
+    } else {
+      message = err.message
+    }
+  }
 
   if (err.name === 'ValidationError') {
     statusCode = 400
@@ -25,7 +37,7 @@ const errorHandler = (err, req, res, next) => {
     message = `Invalid ${err.path}: ${err.value}`
   }
 
-  
+
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401
     message = 'Invalid token. Please log in again.'

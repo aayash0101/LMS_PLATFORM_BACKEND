@@ -3,9 +3,11 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import cloudinary from './config/cloudinary.js'
 
 import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
+
 
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'

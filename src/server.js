@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import app from './app.js'
 import connectDB from './config/database.js'
+import cloudinary from './config/cloudinary.js'
 
 console.log('MONGO_URI:', process.env.MONGO_URI)
 const PORT = process.env.PORT || 5000
