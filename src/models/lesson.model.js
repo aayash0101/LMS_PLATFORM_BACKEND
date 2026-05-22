@@ -1,5 +1,3 @@
-// src/models/lesson.model.js
-
 import mongoose from 'mongoose'
 
 const lessonSchema = new mongoose.Schema(
@@ -29,24 +27,12 @@ const lessonSchema = new mongoose.Schema(
       required: true,
     },
 
-    /**
-     * Video stored on Cloudinary.
-     * public_id needed to delete/replace the video.
-     * url is the streaming URL shown to students.
-     * duration stored in seconds — frontend formats it.
-     */
     video: {
       public_id: String,
       url: String,
       duration: Number,
     },
 
-    /**
-     * Downloadable resources attached to the lesson.
-     * Embedded array — resources don't exist outside a lesson.
-     * WHY embedded? Resources are always fetched with their lesson.
-     * No benefit to referencing them separately.
-     */
     resources: [
       {
         name: String,
@@ -56,19 +42,16 @@ const lessonSchema = new mongoose.Schema(
       },
     ],
 
-    // Order within the section (1-based)
     order: {
       type: Number,
       default: 0,
     },
 
-    // Free preview lessons are visible without enrollment
     isPreview: {
       type: Boolean,
       default: false,
     },
 
-    // Duration in seconds — set after video upload
     duration: {
       type: Number,
       default: 0,
