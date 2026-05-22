@@ -8,6 +8,7 @@ import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
 
 import authRoutes from './routes/auth.routes.js'
+import userRoutes from './routes/user.routes.js'
 
 const app = express()
 
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cookieParser())
 
 app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
