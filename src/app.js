@@ -36,7 +36,9 @@ app.use(cookieParser())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
-app.use('/api/courses', courseRoutes);
+app.use('/api/courses', courseRoutes)
+app.use('/api/courses/:courseId/sections', sectionRoutes)
+app.use('/api/courses/:courseId/sections/:sectionId/lessons', lessonRoutes)
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
