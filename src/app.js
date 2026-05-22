@@ -7,6 +7,8 @@ import cookieParser from 'cookie-parser'
 import errorHandler from './middleware/errorHandler.js'
 import notFound from './middleware/notFound.js'
 
+import authRoutes from './routes/auth.routes.js'
+
 const app = express()
 
 app.use(helmet())
@@ -26,6 +28,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 app.use(cookieParser())
 
+app.use('/api/auth', authRoutes)
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,

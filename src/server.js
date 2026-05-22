@@ -2,7 +2,6 @@ import 'dotenv/config'
 import app from './app.js'
 import connectDB from './config/database.js'
 
-// Add this line temporarily
 console.log('MONGO_URI:', process.env.MONGO_URI)
 const PORT = process.env.PORT || 5000
 
