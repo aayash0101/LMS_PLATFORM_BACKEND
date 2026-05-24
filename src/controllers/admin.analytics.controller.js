@@ -1,6 +1,6 @@
 import asyncHandler from '../utils/asyncHandler.js'
 import { successResponse } from '../utils/apiResponse.js'
-import * as analyticsService from '../services/admin.analytics.service.js'
+import * as analyticsService from '../services/admin.analaytics.service.js'
 
 export const getOverview = asyncHandler(async (req, res) => {
   const data = await analyticsService.getAdminOverview()

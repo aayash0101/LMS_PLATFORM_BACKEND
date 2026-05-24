@@ -1,5 +1,6 @@
 import Course from '../models/course.model.js'
 import User from '../models/user.model.js'
+import mongoose from 'mongoose'
 import ApiError from '../utils/ApiError.js'
 import { getPagination, getPaginationMeta } from '../utils/pagination.js'
 import { slugify, generateUniqueSlug } from '../utils/slugify.js'
@@ -9,7 +10,7 @@ import {
 } from '../utils/uploadToCloudinary.js'
 
 export const createCourse = async (instructorId, courseData) => {
-  
+
   const baseSlug = slugify(courseData.title)
   const existingCourse = await Course.findOne({ slug: baseSlug })
   if (existingCourse) {
@@ -54,7 +55,7 @@ export const getAllCourses = async (query) => {
     filter.$text = { $search: query.search }
   }
 
-  let sort = { createdAt: -1 } 
+  let sort = { createdAt: -1 }
 
   if (query.sort === 'rating') sort = { averageRating: -1 }
   if (query.sort === 'popular') sort = { totalStudents: -1 }
@@ -77,24 +78,25 @@ export const getAllCourses = async (query) => {
   }
 }
 
-export const getCourseById = async (courseId) => {
-  const course = await Course.findById(courseId)
+export const getCourseById = async (idOrSlug) => {
+  // Determine if the param is a valid ObjectId or a slug
+  const isObjectId = mongoose.Types.ObjectId.isValid(idOrSlug)
+
+  const course = await Course.findOne(
+    isObjectId ? { _id: idOrSlug } : { slug: idOrSlug }
+  )
     .populate('instructor', 'name avatar bio')
     .populate({
       path: 'sections',
-      options: { sort: { order: 1 } },
       populate: {
         path: 'lessons',
-        select: 'title duration isPreview order',
-        options: { sort: { order: 1 } },
+        select: 'title description duration isPreview video order',
       },
     })
 
   if (!course) throw new ApiError(404, 'Course not found')
-
   return course
 }
-
 export const updateCourse = async (courseId, instructorId, updateData) => {
   const course = await Course.findById(courseId)
 
@@ -108,7 +110,7 @@ export const updateCourse = async (courseId, instructorId, updateData) => {
     const newSlug = slugify(updateData.title)
     const existing = await Course.findOne({
       slug: newSlug,
-      _id: { $ne: courseId },  
+      _id: { $ne: courseId },
     })
     updateData.slug = existing ? generateUniqueSlug(updateData.title) : newSlug
   }
@@ -187,7 +189,7 @@ export const uploadThumbnail = async (courseId, instructorId, fileBuffer) => {
     'lms/thumbnails',
     {
       transformation: [
-        { width: 1280, height: 720, crop: 'fill' },  
+        { width: 1280, height: 720, crop: 'fill' },
       ],
     }
   )
