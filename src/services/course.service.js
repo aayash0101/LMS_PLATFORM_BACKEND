@@ -10,7 +10,6 @@ import {
 } from '../utils/uploadToCloudinary.js'
 
 export const createCourse = async (instructorId, courseData) => {
-
   const baseSlug = slugify(courseData.title)
   const existingCourse = await Course.findOne({ slug: baseSlug })
   if (existingCourse) {
@@ -51,12 +50,17 @@ export const getAllCourses = async (query) => {
     if (query.maxPrice) filter.price.$lte = Number(query.maxPrice)
   }
 
-  if (query.search) {
-    filter.$text = { $search: query.search }
+  // ✅ Regex search — supports partial/prefix matching as you type
+  const searchTerm = query.search?.trim()
+  if (searchTerm) {
+    filter.$or = [
+      { title: { $regex: searchTerm, $options: 'i' } },
+      { description: { $regex: searchTerm, $options: 'i' } },
+      { tags: { $regex: searchTerm, $options: 'i' } },
+    ]
   }
 
   let sort = { createdAt: -1 }
-
   if (query.sort === 'rating') sort = { averageRating: -1 }
   if (query.sort === 'popular') sort = { totalStudents: -1 }
   if (query.sort === 'price-low') sort = { price: 1 }
@@ -79,7 +83,6 @@ export const getAllCourses = async (query) => {
 }
 
 export const getCourseById = async (idOrSlug) => {
-  // Determine if the param is a valid ObjectId or a slug
   const isObjectId = mongoose.Types.ObjectId.isValid(idOrSlug)
 
   const course = await Course.findOne(
@@ -97,6 +100,7 @@ export const getCourseById = async (idOrSlug) => {
   if (!course) throw new ApiError(404, 'Course not found')
   return course
 }
+
 export const updateCourse = async (courseId, instructorId, updateData) => {
   const course = await Course.findById(courseId)
 
