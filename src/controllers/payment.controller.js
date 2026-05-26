@@ -1,17 +1,17 @@
 import asyncHandler from '../utils/asyncHandler.js'
-import ApiResponse from '../utils/ApiResponse.js'
+import { successResponse, errorResponse } from '../utils/apiResponse.js'
 import { initiatePayment, verifyPayment } from '../services/payment.service.js'
 
 export const initiate = asyncHandler(async (req, res) => {
   const data = await initiatePayment(req.user._id, req.params.courseId)
-  res.status(200).json(new ApiResponse(200, data, 'Payment initiated'))
+  return successResponse(res, { message: 'Payment initiated', data })
 })
 
 export const verify = asyncHandler(async (req, res) => {
   const { data: encodedData, courseId } = req.query
   if (!encodedData) {
-    return res.status(400).json(new ApiResponse(400, null, 'Missing payment data'))
+    return errorResponse(res, { message: 'Missing payment data', statusCode: 400 })
   }
   const result = await verifyPayment(req.user._id, encodedData)
-  res.status(200).json(new ApiResponse(200, result, 'Payment verified and enrollment activated'))
+  return successResponse(res, { message: 'Payment verified and enrollment activated', data: result })
 })
