@@ -7,14 +7,16 @@ const enrollmentSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
       required: true,
     },
-
-
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Payment',
+      default: null,
+    },
     progress: [
       {
         lesson: {
@@ -28,21 +30,17 @@ const enrollmentSchema = new mongoose.Schema(
         },
       },
     ],
-
     completionPercentage: {
       type: Number,
       default: 0,
       min: 0,
       max: 100,
     },
-
     isCompleted: {
       type: Boolean,
       default: false,
     },
-
     completedAt: Date,
-
     paymentStatus: {
       type: String,
       enum: ['free', 'paid', 'pending'],
@@ -59,5 +57,4 @@ enrollmentSchema.index({ student: 1 })
 enrollmentSchema.index({ course: 1 })
 
 const Enrollment = mongoose.model('Enrollment', enrollmentSchema)
-
 export default Enrollment
