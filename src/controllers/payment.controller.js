@@ -9,6 +9,7 @@ export const initiate = asyncHandler(async (req, res) => {
 
 export const verify = asyncHandler(async (req, res) => {
   const { data: encodedData, courseId } = req.query
+  console.log('req.user._id:', req.user._id)  
   if (!encodedData) {
     return errorResponse(res, { message: 'Missing payment data', statusCode: 400 })
   }

@@ -7,10 +7,10 @@ import User from '../models/user.model.js'
 import ApiError from '../utils/ApiError.js'
 
 const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST'
-const ESEWA_SECRET_KEY    = process.env.ESEWA_SECRET_KEY    || '8gBm/:&EnhH.1/q'
-const ESEWA_PAYMENT_URL   = process.env.ESEWA_PAYMENT_URL   || 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
-const ESEWA_VERIFY_URL    = process.env.ESEWA_VERIFY_URL    || 'https://rc-epay.esewa.com.np/api/epay/transaction/statuscheck'
-const FRONTEND_URL        = process.env.FRONTEND_URL        || 'http://localhost:5173'
+const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q'
+const ESEWA_PAYMENT_URL = process.env.ESEWA_PAYMENT_URL || 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
+const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL || 'https://rc-epay.esewa.com.np/api/epay/transaction/status/' // ✅ fixed
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
 const generateSignature = (message) => {
   return crypto
@@ -35,8 +35,8 @@ export const initiatePayment = async (studentId, courseId) => {
   })
   if (existingEnrollment) throw new ApiError(409, 'Already enrolled in this course')
 
-  const transactionId = `LMS-${studentId}-${courseId}-${Date.now()}`
   const amount = course.price
+  const transactionId = `LMS-${studentId}-${courseId}-${Date.now()}`
 
   const signatureMessage = `total_amount=${amount},transaction_uuid=${transactionId},product_code=${ESEWA_MERCHANT_CODE}`
   const signature = generateSignature(signatureMessage)
@@ -55,7 +55,7 @@ export const initiatePayment = async (studentId, courseId) => {
     signature,
     merchantCode: ESEWA_MERCHANT_CODE,
     paymentUrl: ESEWA_PAYMENT_URL,
-    successUrl: `${FRONTEND_URL}/payment/verify?courseId=${courseId}`,
+    successUrl: `${FRONTEND_URL}/payment/verify?courseId=${courseId}&`, // ✅ trailing & so eSewa appends data= correctly
     failureUrl: `${FRONTEND_URL}/courses/${course.slug}?payment=failed`,
     courseTitle: course.title,
   }
@@ -68,6 +68,8 @@ export const verifyPayment = async (studentId, encodedData) => {
   } catch {
     throw new ApiError(400, 'Invalid payment response from eSewa')
   }
+
+  console.log('✅ Decoded:', decoded)  // ← add this
 
   const {
     transaction_uuid: transactionId,
@@ -84,6 +86,8 @@ export const verifyPayment = async (studentId, encodedData) => {
     .join(',')
 
   const expectedSignature = generateSignature(signatureMessage)
+  console.log('✅ Signature match:', expectedSignature === receivedSignature)  // ← add this
+
   if (expectedSignature !== receivedSignature) {
     throw new ApiError(400, 'Payment signature verification failed')
   }
@@ -93,6 +97,10 @@ export const verifyPayment = async (studentId, encodedData) => {
   }
 
   const payment = await Payment.findOne({ transactionId })
+  console.log('Payment student:', payment?.student?.toString())
+  console.log('Request studentId:', studentId?.toString())
+  console.log('Match:', payment?.student?.toString() === studentId?.toString())
+  
   if (!payment) throw new ApiError(404, 'Payment record not found')
   if (payment.student.toString() !== studentId.toString()) {
     throw new ApiError(403, 'Payment does not belong to this user')
@@ -101,6 +109,7 @@ export const verifyPayment = async (studentId, encodedData) => {
     throw new ApiError(409, 'Payment already processed')
   }
 
+  console.log('⏳ Calling eSewa verify URL...')  // ← add this
   try {
     const verifyRes = await axios.get(ESEWA_VERIFY_URL, {
       params: {
@@ -108,12 +117,15 @@ export const verifyPayment = async (studentId, encodedData) => {
         total_amount: payment.amount,
         transaction_uuid: transactionId,
       },
+      timeout: 10000,  // ← add 10 second timeout so it doesn't hang forever
     })
+    console.log('✅ eSewa verify response:', verifyRes.data)  // ← add this
 
     if (verifyRes.data?.status !== 'COMPLETE') {
       throw new ApiError(400, 'eSewa verification failed')
     }
   } catch (err) {
+    console.log('❌ eSewa verify error:', err.message)  // ← add this
     if (err instanceof ApiError) throw err
     throw new ApiError(502, 'Could not verify payment with eSewa')
   }
