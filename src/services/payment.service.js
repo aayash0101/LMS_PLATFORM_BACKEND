@@ -9,7 +9,7 @@ import ApiError from '../utils/ApiError.js'
 const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST'
 const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q'
 const ESEWA_PAYMENT_URL = process.env.ESEWA_PAYMENT_URL || 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
-const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL || 'https://rc-epay.esewa.com.np/api/epay/transaction/status/' // ✅ fixed
+const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL || 'https://rc-epay.esewa.com.np/api/epay/transaction/status/'
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
 const generateSignature = (message) => {
@@ -55,13 +55,13 @@ export const initiatePayment = async (studentId, courseId) => {
     signature,
     merchantCode: ESEWA_MERCHANT_CODE,
     paymentUrl: ESEWA_PAYMENT_URL,
-    successUrl: `${FRONTEND_URL}/payment/verify?courseId=${courseId}&`, // ✅ trailing & so eSewa appends data= correctly
+    successUrl: `${FRONTEND_URL}/payment/verify?courseId=${courseId}&`,
     failureUrl: `${FRONTEND_URL}/courses/${course.slug}?payment=failed`,
     courseTitle: course.title,
   }
 }
 
-export const verifyPayment = async (studentId, encodedData) => {
+export const verifyPayment = async (encodedData) => {
   let decoded
   try {
     decoded = JSON.parse(Buffer.from(encodedData, 'base64').toString('utf-8'))
@@ -69,12 +69,11 @@ export const verifyPayment = async (studentId, encodedData) => {
     throw new ApiError(400, 'Invalid payment response from eSewa')
   }
 
-  console.log('✅ Decoded:', decoded)  // ← add this
+  console.log('Decoded:', decoded)
 
   const {
     transaction_uuid: transactionId,
     status,
-    total_amount: totalAmount,
     transaction_code: providerRefId,
     signed_field_names,
     signature: receivedSignature,
@@ -86,7 +85,7 @@ export const verifyPayment = async (studentId, encodedData) => {
     .join(',')
 
   const expectedSignature = generateSignature(signatureMessage)
-  console.log('✅ Signature match:', expectedSignature === receivedSignature)  // ← add this
+  console.log('Signature match:', expectedSignature === receivedSignature)
 
   if (expectedSignature !== receivedSignature) {
     throw new ApiError(400, 'Payment signature verification failed')
@@ -97,19 +96,13 @@ export const verifyPayment = async (studentId, encodedData) => {
   }
 
   const payment = await Payment.findOne({ transactionId })
-  console.log('Payment student:', payment?.student?.toString())
-  console.log('Request studentId:', studentId?.toString())
-  console.log('Match:', payment?.student?.toString() === studentId?.toString())
-  
   if (!payment) throw new ApiError(404, 'Payment record not found')
-  if (payment.student.toString() !== studentId.toString()) {
-    throw new ApiError(403, 'Payment does not belong to this user')
-  }
-  if (payment.status === 'completed') {
-    throw new ApiError(409, 'Payment already processed')
-  }
+  if (payment.status === 'completed') throw new ApiError(409, 'Payment already processed')
 
-  console.log('⏳ Calling eSewa verify URL...')  // ← add this
+  const studentId = payment.student  
+  const courseId = payment.course
+
+  console.log(' Calling eSewa verify URL...')
   try {
     const verifyRes = await axios.get(ESEWA_VERIFY_URL, {
       params: {
@@ -117,15 +110,15 @@ export const verifyPayment = async (studentId, encodedData) => {
         total_amount: payment.amount,
         transaction_uuid: transactionId,
       },
-      timeout: 10000,  // ← add 10 second timeout so it doesn't hang forever
+      timeout: 10000,
     })
-    console.log('✅ eSewa verify response:', verifyRes.data)  // ← add this
+    console.log(' eSewa verify response:', verifyRes.data)
 
     if (verifyRes.data?.status !== 'COMPLETE') {
       throw new ApiError(400, 'eSewa verification failed')
     }
   } catch (err) {
-    console.log('❌ eSewa verify error:', err.message)  // ← add this
+    console.log(' eSewa verify error:', err.message)
     if (err instanceof ApiError) throw err
     throw new ApiError(502, 'Could not verify payment with eSewa')
   }
@@ -134,9 +127,7 @@ export const verifyPayment = async (studentId, encodedData) => {
   payment.providerRefId = providerRefId
   await payment.save()
 
-  const courseId = payment.course
-
-  const existingEnrollment = await Enrollment.findOne({
+ const existingEnrollment = await Enrollment.findOne({
     student: studentId,
     course: courseId,
   })
