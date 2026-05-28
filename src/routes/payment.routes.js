@@ -4,10 +4,7 @@ import { protect, authorize } from '../middleware/auth.middleware.js'
 
 const router = Router()
 
-router.use(protect)
-
-router.post('/esewa/initiate/:courseId', authorize('student'), initiate)
-
+router.post('/esewa/initiate/:courseId', protect, authorize('student'), initiate)
 router.get('/esewa/verify', verify)
 
 export default router
