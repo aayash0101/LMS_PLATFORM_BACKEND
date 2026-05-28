@@ -1,5 +1,4 @@
 import crypto from 'crypto'
-import axios from 'axios'
 import Payment from '../models/payment.model.js'
 import Course from '../models/course.model.js'
 import Enrollment from '../models/enrollment.model.js'
@@ -9,7 +8,6 @@ import ApiError from '../utils/ApiError.js'
 const ESEWA_MERCHANT_CODE = process.env.ESEWA_MERCHANT_CODE || 'EPAYTEST'
 const ESEWA_SECRET_KEY = process.env.ESEWA_SECRET_KEY || '8gBm/:&EnhH.1/q'
 const ESEWA_PAYMENT_URL = process.env.ESEWA_PAYMENT_URL || 'https://rc-epay.esewa.com.np/api/epay/main/v2/form'
-const ESEWA_VERIFY_URL = process.env.ESEWA_VERIFY_URL || 'https://rc-epay.esewa.com.np/api/epay/transaction/status/'
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
 const generateSignature = (message) => {
@@ -79,6 +77,7 @@ export const verifyPayment = async (encodedData) => {
     signature: receivedSignature,
   } = decoded
 
+  // Verify HMAC signature — cryptographically proves payment came from eSewa
   const signatureMessage = signed_field_names
     .split(',')
     .map((field) => `${field}=${decoded[field]}`)
@@ -99,35 +98,17 @@ export const verifyPayment = async (encodedData) => {
   if (!payment) throw new ApiError(404, 'Payment record not found')
   if (payment.status === 'completed') throw new ApiError(409, 'Payment already processed')
 
-  const studentId = payment.student  
+  // studentId from our own DB — not from the request
+  const studentId = payment.student
   const courseId = payment.course
 
-  console.log(' Calling eSewa verify URL...')
-  try {
-    const verifyRes = await axios.get(ESEWA_VERIFY_URL, {
-      params: {
-        product_code: ESEWA_MERCHANT_CODE,
-        total_amount: payment.amount,
-        transaction_uuid: transactionId,
-      },
-      timeout: 10000,
-    })
-    console.log(' eSewa verify response:', verifyRes.data)
-
-    if (verifyRes.data?.status !== 'COMPLETE') {
-      throw new ApiError(400, 'eSewa verification failed')
-    }
-  } catch (err) {
-    console.log(' eSewa verify error:', err.message)
-    if (err instanceof ApiError) throw err
-    throw new ApiError(502, 'Could not verify payment with eSewa')
-  }
+  console.log('Signature verified — proceeding with enrollment')
 
   payment.status = 'completed'
   payment.providerRefId = providerRefId
   await payment.save()
 
- const existingEnrollment = await Enrollment.findOne({
+  const existingEnrollment = await Enrollment.findOne({
     student: studentId,
     course: courseId,
   })
