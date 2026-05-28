@@ -36,14 +36,15 @@ app.use(cors({
   credentials: true,
 }))
 
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'))
-}
+app.use(morgan('combined'))
 
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(cookieParser())
 
+app.post('/api/auth/test', (req, res) => {
+  res.json({ body: req.body, success: true })
+})
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/courses', courseRoutes)

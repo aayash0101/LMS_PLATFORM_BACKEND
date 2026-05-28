@@ -14,7 +14,6 @@ export const registerUser = async ({ name, email, password, role }) => {
 
   const user = await User.create({ name, email, password, role })
 
-  // Generate tokens
   const accessToken = generateAccessToken(user._id, user.role)
   const refreshToken = generateRefreshToken(user._id)
 
